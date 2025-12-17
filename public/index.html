@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PROLEPSIS</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        
+        body { margin: 0; background: #050505; color: #a0c0ff; font-family: 'Segoe UI', monospace; overflow: hidden; }
+        #map { height: 100vh; width: 100vw; z-index: 0; background: #0b1026; }
+        
+        .scanner-line { 
+            position: absolute; top: 0; left: -10%; width: 5px; height: 100%; 
+            background: linear-gradient(to bottom, transparent, #00f3ff, transparent); 
+            box-shadow: 0 0 15px #00f3ff; opacity: 0.5; pointer-events: none; z-index: 5; 
+            animation: scan 6s linear infinite; 
+        }
+        @keyframes scan { 0% { left: -10%; } 100% { left: 110%; } }
+
+        
+        .hud-header { position: absolute; top: 0; width: 100%; height: 65px; background: rgba(2, 5, 15, 0.95); border-bottom: 2px solid #00f3ff; z-index: 20; display: flex; align-items: center; padding: 0 25px; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); }
+        .hud-title { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #fff; text-shadow: 0 0 10px #00f3ff; }
+
+        
+        .hud-sidebar { position: absolute; top: 85px; left: 25px; width: 360px; bottom: 240px; background: rgba(2, 6, 15, 0.9); border: 1px solid #1a3c6e; backdrop-filter: blur(10px); z-index: 10; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .ship-card { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px; font-size: 12px; cursor: pointer; background: rgba(0, 20, 40, 0.2); transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .ship-card:hover { background: rgba(0, 243, 255, 0.1); border-left: 4px solid #00f3ff; }
+
+        
+        .chart-panel {
+            position: absolute; bottom: 25px; left: 25px; width: 360px; height: 200px;
+            background: rgba(0, 0, 0, 0.85); border: 1px solid #00f3ff;
+            z-index: 10; padding: 10px; backdrop-filter: blur(5px);
+        }
+        .chart-title { font-size: 10px; color: #00f3ff; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
+
+        
+        .details-panel { position: absolute; top: 85px; right: 25px; width: 350px; background: rgba(5, 8, 20, 0.95); border: 1px solid #00f3ff; z-index: 30; padding: 20px; display: none; box-shadow: 0 0 40px rgba(0, 243, 255, 0.2); backdrop-filter: blur(10px); max-height: 80vh; overflow-y: auto; }
+        .d-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; border-bottom: 1px solid #222; padding-bottom: 4px; }
+        
+        
+        .admin-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid #ff0050; }
+        .admin-title { color: #ff0050; font-weight: bold; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px; display: block; }
+        .admin-select { width: 100%; background: #111; border: 1px solid #444; color: #fff; padding: 8px; margin-bottom: 10px; font-family: monospace; }
+        .admin-btn { width: 100%; background: #330010; border: 1px solid #ff0050; color: #ff0050; padding: 8px; font-weight: bold; cursor: pointer; margin-bottom: 5px; transition: 0.2s; }
+        .admin-btn:hover { background: #ff0050; color: #fff; }
+        .admin-btn-blue { border-color: #00f3ff; color: #00f3ff; background: #001020; }
+        .admin-btn-blue:hover { background: #00f3ff; color: #000; }
+
+        
+        .alert-btn { position: absolute; top: 120px; right: 50%; transform: translateX(50%); background: #ff0050; color: #fff; padding: 15px 50px; z-index: 50; font-weight: 900; letter-spacing: 2px; border: 2px solid #fff; cursor: pointer; display: none; box-shadow: 0 0 50px #ff0050; animation: pulse-alert 0.8s infinite alternate; }
+        @keyframes pulse-alert { from { transform: translateX(50%) scale(1); } to { transform: translateX(50%) scale(1.05); } }
+
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 100; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .secure-box { width: 450px; background: #050505; border: 2px solid #ff0050; padding: 40px; text-align: center; box-shadow: 0 0 80px rgba(255, 0, 80, 0.3); position: relative; }
+        .secure-input { width: 100%; padding: 15px; margin: 10px 0; background: #111; border: 1px solid #444; color: #fff; font-size: 28px; text-align: center; letter-spacing: 10px; font-family: monospace; box-sizing: border-box; }
+        .reason-input { width: 100%; padding: 10px; margin: 0 0 20px 0; background: #111; border: 1px solid #444; color: #ccc; font-size: 14px; font-family: monospace; box-sizing: border-box; }
+
+        
+        .btn-neon { background: transparent; border: 1px solid #00f3ff; color: #00f3ff; padding: 8px 20px; cursor: pointer; font-weight: bold; letter-spacing: 1px; transition: 0.3s; }
+        .btn-neon:hover { background: #00f3ff; color: #000; box-shadow: 0 0 20px #00f3ff; }
+        .btn-auth { background: #ff0050; color: #fff; border:none; padding:15px 30px; font-weight:bold; cursor:pointer; font-size: 14px; letter-spacing: 2px;}
+        .status-pill { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; color: #000; display: inline-block; min-width: 80px; text-align: center; }
+        
+        .c-pacific { color: #00e5ff; border-left-color: #00e5ff; } 
+        .c-atlantic { color: #d500f9; border-left-color: #d500f9; } 
+        .c-suez { color: #ffea00; border-left-color: #ffea00; } 
+        .c-arctic { color: #ffffff; border-left-color: #ffffff; } 
+        .c-danger { color: #ff1744; border-left-color: #ff1744; animation: flashRed 1s infinite; }
+        .c-maint { color: #ff9100; border-left-color: #ff9100; }
+        .c-slow { color: #00ff88; border-left-color: #00ff88; }
+        .c-pilot { color: #b388ff; border-left-color: #b388ff; }
+
+        @keyframes flashRed { 0% { background: rgba(255, 23, 68, 0.1); } 50% { background: rgba(255, 23, 68, 0.3); } 100% { background: rgba(255, 23, 68, 0.1); } }
+
+        
+        .replay-slider { width: 100%; height: 4px; background: #333; outline: none; margin-top: 10px; -webkit-appearance: none; }
+        .replay-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: #00f3ff; cursor: pointer; border-radius: 50%; box-shadow: 0 0 10px #00f3ff; }
+
+        
+        .kernel-log { position: absolute; bottom: 30px; right: 30px; width: 400px; height: 200px; background: rgba(0,0,0,0.8); border: 1px solid #333; color: #00ff88; font-size: 11px; padding: 15px; overflow: hidden; border-top: 2px solid #00ff88; pointer-events: none; }
+        
+        #diag-box { position: absolute; top: 70px; left: 10px; background: red; color: white; padding: 5px; font-size: 10px; z-index: 9999; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+    <div class="scanner-line"></div>
+    <div id="diag-box"></div>
+
+    <div class="hud-header">
+        <div class="hud-title">PROLEPSIS </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:20px;">
+            <div style="text-align:right;">
+                <div style="font-size:10px; color:#888;">ACTIVE VESSELS</div>
+                <div id="stat-count" style="font-size:18px; font-weight:bold; color:#fff;">0</div>
+            </div>
+            <button class="btn-neon" onclick="startSwarm()">DEPLOY FLEET</button>
+        </div>
+    </div>
+
+    <div class="hud-sidebar">
+        <div style="padding: 15px; color: #fff; font-weight: bold; border-bottom:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);">LIVE MANIFEST</div>
+        <div id="ship-list" style="overflow-y: auto; flex: 1;"></div>
+    </div>
+
+    <div class="chart-panel">
+        <div class="chart-title">FLEET RISK AGGREGATE</div>
+        <canvas id="riskChart"></canvas>
+    </div>
+
+    <div id="details-panel" class="details-panel">
+        <h3 style="margin-top:0; color:#00f3ff; border-bottom: 1px solid #333; padding-bottom: 10px;" id="d-id">SHIP-0000</h3>
+        
+        <div id="live-data">
+            <div class="d-row"><span style="color:#888">STATUS</span> <span id="d-status" style="font-weight:bold;">--</span></div>
+            <div class="d-row"><span style="color:#888">WEATHER</span> <span id="d-weather" style="color:#00ff88; font-weight:bold;">SCANNING...</span></div>
+            <div class="d-row"><span style="color:#888">ROUTE</span> <span id="d-route">--</span></div>
+            <div class="d-row"><span style="color:#888">CARGO</span> <span id="d-cargo" style="color:#fff;">--</span></div>
+            <div class="d-row"><span style="color:#888">TYPE</span> <span id="d-type">--</span></div>
+            <div style="margin-top:15px; font-size:10px; color:#888;">LATEST LOG:</div>
+            <div id="d-log" style="color:#00f3ff; font-size:11px; margin-top: 5px; font-family: monospace;">--</div>
+        </div>
+
+        <div style="margin-top:15px; padding-top:15px; border-top:1px solid #333;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:10px; color:#00ff88; font-weight:bold;">BLACK BOX REPLAY</span>
+                <span id="replay-time" style="font-size:10px; color:#888;">LIVE</span>
+            </div>
+            <input type="range" min="0" max="100" value="100" class="replay-slider" id="history-slider" oninput="updateReplay(this.value)">
+        </div>
+
+        <div class="admin-section">
+            <span class="admin-title">⚠️ ADMIN OVERRIDE CONTROLS</span>
+            <input type="password" id="admin-key" class="admin-select" placeholder="ADMIN KEY (admin123)">
+            
+            <button class="admin-btn" style="border-color: #00ff88; color: #00ff88; background: #002211; margin-bottom: 15px;" onclick="sendAdminCmd('TEST_ALERT')">
+                 SEND TEST SMS
+            </button>
+
+            <input type="text" id="admin-reason" class="admin-select" placeholder="REASON / LOG ENTRY...">
+            
+            <label style="font-size:10px; color:#888;">FORCE REROUTE TO:</label>
+            <select id="route-select" class="admin-select">
+                <option value="PACIFIC">Pacific Run</option>
+                <option value="ATLANTIC">Atlantic Cross</option>
+                <option value="SUEZ">Suez Express</option>
+                <option value="ARCTIC">Arctic Circle</option>
+                <option value="CAPE">Cape of Good Hope</option>
+            </select>
+            <button class="admin-btn" onclick="sendAdminCmd('FORCE_REROUTE')">FORCE REROUTE</button>
+            
+            <label style="font-size:10px; color:#888; margin-top:10px; display:block;">MANUAL STATUS:</label>
+            <select id="status-select" class="admin-select">
+                <option value="QUARANTINED">QUARANTINE VESSEL</option>
+                <option value="REFUELING_AUTHORIZED">AUTHORIZE REFUEL</option>
+                <option value="DOCKED">FORCE DOCKING</option>
+                <option value="SOS_SIGNAL">TRIGGER SOS</option>
+                <option value="MAINTENANCE_REQUIRED">FLAG MAINTENANCE</option>
+            </select>
+            <button class="admin-btn admin-btn-blue" onclick="sendAdminCmd('SET_STATUS')">UPDATE STATUS</button>
+        </div>
+        
+        <button class="btn-neon" style="width:100%; margin-top:20px; border-color: #444; color: #666;" onclick="closeDetails()">CLOSE</button>
+    </div>
+
+    <div id="alert-btn" class="alert-btn" onclick="openSecurity()">⚠️ ACTION REQUIRED</div>
+
+    <div id="security-modal" class="modal-overlay">
+        <div class="secure-box">
+            <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:#ff0050;"></div>
+            <h2 style="color:#ff0050; margin:0 0 10px 0; letter-spacing:3px;">SECURITY OVERRIDE</h2>
+            <p style="color:#888; font-size:12px; margin:0;">AUTHORIZE INTERVENTION</p>
+            <div style="margin: 20px 0; font-size: 14px; color: #fff;">
+                TARGET: <span id="secure-target" style="color:#00f3ff; font-weight:bold;">--</span>
+                <br><span style="color:#ff0050; font-size:12px;" id="secure-reason">REASON: UNKNOWN</span>
+            </div>
+            <input type="password" id="auth-pass" class="secure-input" placeholder="••••" autofocus>
+            <div style="margin-top: 15px; text-align: left;">
+                <label style="color:#888; font-size:10px;">DENIAL REASON:</label>
+                <input type="text" id="auth-reason" class="reason-input" placeholder="Optional...">
+            </div>
+            <div style="display:flex; gap:15px; justify-content:center;">
+                <button class="btn-auth" onclick="submitAuth(true)">AUTHORIZE</button>
+                <button class="btn-auth" style="background:transparent; border:1px solid #444; color:#666;" onclick="submitAuth(false)">DENY</button>
+            </div>
+            <div id="auth-error" style="color:#ff0050; font-size:12px; margin-top:20px; font-weight:bold; height:15px;"></div>
+        </div>
+    </div>
+
+    <div class="kernel-log" id="kernel-logs"><div>> SYSTEM INITIALIZED.</div></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        
+        window.onerror = function(msg) { document.getElementById('diag-box').style.display='block'; document.getElementById('diag-box').innerText="ERR: "+msg; };
+
+        
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function sfx(type) {
+            try {
+                if (!audioCtx) audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination); const t = audioCtx.currentTime;
+                if (type==='start') { o.frequency.value=100; g.gain.value=0.1; o.frequency.exponentialRampToValueAtTime(800, t+0.5); o.start(t); o.stop(t+0.5); }
+                if (type==='alert') { o.type='sawtooth'; o.frequency.value=150; g.gain.value=0.1; o.start(t); o.stop(t+0.3); }
+                if (type==='ok') { o.type='triangle'; o.frequency.value=600; g.gain.value=0.1; o.start(t); o.stop(t+0.5); }
+                if (type==='err') { o.type='square'; o.frequency.value=100; g.gain.value=0.1; o.start(t); o.stop(t+0.3); }
+            } catch (e) {}
+        }
+
+        
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 18, opacity: 0.9 }).addTo(map);
+
+        
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(ctx, {
+            type: 'line',
+            data: { 
+                labels: Array(20).fill(''), 
+                datasets: [{ 
+                    label: 'RISK INDEX', 
+                    data: Array(20).fill(0), 
+                    borderColor: '#00f3ff', 
+                    borderWidth: 2, 
+                    pointRadius: 0,
+                    tension: 0.4,
+                    fill: 'start',
+                    backgroundColor: 'rgba(0, 243, 255, 0.1)'
+                }] 
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    x: { display: false }, 
+                    y: { min: 0, max: 10, grid: { color: '#222' }, ticks: { color: '#00f3ff', font: { size: 9 } } } 
+                },
+                animation: { duration: 0 } 
+            }
+        });
+
+        const ships = {}; 
+        let pendingShipId = null;
+        let pendingReason = "";
+        let selectedShipData = null;
+        let isAnimating = false;
+        
+        const ROUTE_PATHS = {
+          'PACIFIC': [[34, -118], [21, -157], [35, 139]],
+          'ATLANTIC': [[40, -74], [35, -40], [51, -0.1]],
+          'SUEZ': [[19, 72], [12, 45], [30, 32], [37, 23]],
+          'CAPE': [[-22, -43], [-34, 18], [19, 72]],
+          'ARCTIC': [[64, -21], [70, 20], [68, 33]]
+        };
+
+        async function startSwarm() {
+            log("INITIATING FLEET DEPLOYMENT...");
+            sfx('start');
+            await fetch('/start', { method: 'POST' });
+            setInterval(sync, 1000);
+            if (!isAnimating) { isAnimating = true; animateShips(); }
+            setInterval(() => { if(Math.random()>0.8) log("PING: " + Math.random().toString(36).substring(7).toUpperCase()); }, 3000);
+        }
+
+        async function sync() {
+            try {
+                const res = await fetch('/fleet');
+                if (!res.ok) throw new Error("API Failed");
+                const fleet = await res.json();
+                document.getElementById('stat-count').innerText = fleet.length;
+
+                const list = document.getElementById('ship-list');
+                list.innerHTML = '';
+                
+                let currentRisk = 0;
+
+                fleet.forEach(ship => {
+                    let cssClass = 'c-arctic'; let hexColor = '#ffffff';
+                    
+                    if (ship.routeName.includes("Pacific")) { cssClass='c-pacific'; hexColor='#00e5ff'; }
+                    if (ship.routeName.includes("Atlantic")) { cssClass='c-atlantic'; hexColor='#d500f9'; }
+                    if (ship.routeName.includes("Suez")) { cssClass='c-suez'; hexColor='#ffea00'; }
+                    
+                    if (ship.status === 'MAINTENANCE_REQUIRED') { cssClass='c-maint'; hexColor='#ff9100'; currentRisk += 1; }
+                    if (ship.status === 'SLOW_STEAMING') { cssClass='c-slow'; hexColor='#00ff88'; currentRisk += 0.5; }
+                    if (ship.status === 'AWAITING_PILOT') { cssClass='c-pilot'; hexColor='#b388ff'; }
+
+                    if (ship.status.includes("REROUTED") || ship.status === 'QUARANTINED') { cssClass='c-danger'; hexColor='#ff1744'; currentRisk += 3; }
+                    if (ship.status === 'AWAITING_ORDERS') { cssClass='c-suez'; hexColor='#ffea00'; currentRisk += 2; }
+
+                    updateMapData(ship, hexColor);
+
+                    const item = document.createElement('div');
+                    item.className = `ship-card ${cssClass}`;
+                    item.onclick = () => { showDetails(ship); map.flyTo(ships[ship.id].marker.getLatLng(), 5); };
+                    let logTxt = ship.logs[ship.logs.length-1] || "System OK";
+                    item.innerHTML = `<div><strong style="color:${hexColor}">${ship.id}</strong><br><span style="color:#888; font-size:10px;">${ship.routeName}</span></div><div class="status-pill" style="background:${hexColor}">${ship.status.replace('_',' ')}</div>`;
+                    list.appendChild(item);
+
+                    if(selectedShipData && selectedShipData.id === ship.id && document.getElementById('replay-time').innerText === 'LIVE') {
+                        selectedShipData = ship;
+                        updateDetailsUI(ship);
+                    }
+                });
+
+                
+                const avgRisk = fleet.length > 0 ? (currentRisk / fleet.length) * 5 : 0;
+                riskChart.data.datasets[0].data.shift();
+                riskChart.data.datasets[0].data.push(avgRisk);
+                if (avgRisk > 2) riskChart.data.datasets[0].borderColor = '#ff1744';
+                else riskChart.data.datasets[0].borderColor = '#00f3ff';
+                riskChart.update();
+
+                const pending = fleet.find(s => s.status === 'AWAITING_ORDERS');
+                if (pending) {
+                    if (pendingShipId !== pending.id) {
+                        sfx('alert'); pendingShipId = pending.id;
+                        pendingReason = pending.logs[pending.logs.length-1];
+                        map.flyTo(ships[pending.id].marker.getLatLng(), 5, { duration: 1.5 });
+                        log(`INTERVENTION REQUIRED: ${pending.id}`);
+                    }
+                    document.getElementById('alert-btn').style.display = 'block';
+                } else {
+                    document.getElementById('alert-btn').style.display = 'none';
+                    document.getElementById('security-modal').style.display = 'none';
+                    pendingShipId = null;
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function updateMapData(shipData, color) {
+            if (!ships[shipData.id]) {
+                const icon = L.divIcon({ className: 'ship-wrap', iconSize: [24, 24],
+                    html: `<div id="icon-${shipData.id}" class="ship-arrow" style="color:${color}; font-size:24px; text-shadow:0 0 10px ${color}; cursor:pointer; transition: transform 0.1s linear;">➤</div>`
+                });
+                const marker = L.marker(shipData.path[0], {icon}).addTo(map);
+                marker.on('click', () => showDetails(shipData));
+                const polyline = L.polyline(shipData.path, {color, weight:2}).addTo(map);
+                
+                ships[shipData.id] = { marker, polyline, path: shipData.path, pathIdx: 0, progress: 0, speed: 0.003 + Math.random()*0.004 };
+            } else {
+                const ref = ships[shipData.id];
+                if (JSON.stringify(ref.path[0]) !== JSON.stringify(shipData.path[0])) {
+                     ref.path = shipData.path; ref.pathIdx = 0; ref.progress = 0; ref.polyline.setLatLngs(shipData.path);
+                }
+                const el = document.getElementById(`icon-${shipData.id}`);
+                if(el) { el.style.color = color; el.style.textShadow = `0 0 10px ${color}`; }
+                ref.polyline.setStyle({ color: color, dashArray: shipData.status.includes('REROUTED') ? '5,10' : null });
+            }
+        }
+
+        function animateShips() {
+            for (const id in ships) {
+                const ship = ships[id];
+                if (!ship.path || ship.path.length < 2) continue;
+                ship.progress += ship.speed;
+                if (ship.progress >= 1.0) { ship.progress = 0; ship.pathIdx++; if (ship.pathIdx >= ship.path.length - 1) ship.pathIdx = 0; }
+                const p1 = ship.path[ship.pathIdx];
+                const p2 = ship.path[ship.pathIdx + 1];
+                const lat = p1[0] + (p2[0] - p1[0]) * ship.progress;
+                const lng = p1[1] + (p2[1] - p1[1]) * ship.progress;
+                const angle = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI;
+                ship.marker.setLatLng([lat, lng]);
+                const el = document.getElementById(`icon-${id}`);
+                if(el) el.style.transform = `rotate(${angle}deg)`;
+            }
+            requestAnimationFrame(animateShips);
+        }
+
+        async function sendAdminCmd(type) {
+            if(!selectedShipData && type !== 'TEST_ALERT') return;
+            const pass = document.getElementById('admin-key').value;
+            const reason = document.getElementById('admin-reason').value;
+            let payload = {};
+            let mId = selectedShipData ? selectedShipData.id : "SYSTEM";
+
+            if (type === 'FORCE_REROUTE') {
+                const routeKey = document.getElementById('route-select').value;
+                payload = { routeName: `MANUAL_${routeKey}`, path: ROUTE_PATHS[routeKey] };
+            } else if (type === 'SET_STATUS') {
+                payload = { status: document.getElementById('status-select').value };
+            }
+
+            const res = await fetch('/admin-command', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ missionId: mId, action: type, payload, reason, password: pass })
+            });
+            if(res.status === 401) { sfx('err'); alert("ACCESS DENIED: Check Admin Key"); }
+            else if(res.status === 200) { sfx('ok'); alert("COMMAND EXECUTED"); }
+        }
+
+        function showDetails(ship) {
+            selectedShipData = ship;
+            document.getElementById('details-panel').style.display = 'block';
+            document.getElementById('history-slider').value = 100;
+            updateDetailsUI(ship);
+        }
+        function updateDetailsUI(ship) {
+            document.getElementById('d-id').innerText = ship.id;
+            document.getElementById('d-status').innerText = ship.status;
+            document.getElementById('d-route').innerText = ship.routeName;
+            document.getElementById('d-cargo').innerText = ship.cargo;
+            document.getElementById('d-type').innerText = ship.type;
+            
+            let weatherTxt = "CLEAR";
+            const lastLog = ship.logs[ship.logs.length-1] || "";
+            if (lastLog.includes("Weather")) weatherTxt = lastLog.split(": ")[1] || "DATA RECEIVED";
+            if (lastLog.includes("LIVE WEATHER")) { weatherTxt = "STORM ALERT"; document.getElementById('d-weather').style.color = "#ff1744"; }
+            else { document.getElementById('d-weather').style.color = "#00ff88"; }
+            document.getElementById('d-weather').innerText = weatherTxt.toUpperCase();
+
+            document.getElementById('d-log').innerText = lastLog;
+            const sEl = document.getElementById('d-status');
+            sEl.style.color = ship.status.includes('REROUTED') ? '#ff1744' : '#00f3ff';
+        }
+        function updateReplay(val) {
+            if(!selectedShipData || !selectedShipData.history) return;
+            if(val >= 100) { document.getElementById('replay-time').innerText = "LIVE"; updateDetailsUI(selectedShipData); } 
+            else {
+                const idx = Math.floor((val/100)*selectedShipData.history.length);
+                const snap = selectedShipData.history[idx];
+                if(snap) {
+                    document.getElementById('replay-time').innerText = `HISTORY MODE (-${selectedShipData.history.length - idx})`;
+                    document.getElementById('d-status').innerText = snap.status;
+                    document.getElementById('d-log').innerText = snap.log;
+                }
+            }
+        }
+        function closeDetails() { document.getElementById('details-panel').style.display = 'none'; selectedShipData=null; }
+
+        function openSecurity() {
+            if (!pendingShipId) return;
+            document.getElementById('security-modal').style.display = 'flex';
+            document.getElementById('secure-target').innerText = pendingShipId;
+            document.getElementById('secure-reason').innerText = pendingReason;
+            document.getElementById('auth-pass').value = '';
+            document.getElementById('auth-reason').value = '';
+            document.getElementById('auth-error').innerText = '';
+        }
+
+        async function submitAuth(approved) {
+            const pass = document.getElementById('auth-pass').value;
+            const reason = document.getElementById('auth-reason').value;
+            try {
+                const res = await fetch('/approve', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ missionId: pendingShipId, approved, password: pass, reason: reason })
+                });
+                if (res.status === 401) { sfx('err'); document.getElementById('auth-error').innerText = "ACCESS DENIED (Try: admin123)"; return; }
+                sfx('ok'); document.getElementById('security-modal').style.display = 'none';
+                log(`COMMAND: ${approved ? 'AUTHORIZED' : 'DENIED'} for ${pendingShipId}`); map.flyTo([20, 0], 2);
+            } catch(e) {}
+        }
+
+        function log(msg) {
+            const t = document.getElementById('kernel-logs'); const l = document.createElement('div');
+            l.innerText = `> ${msg}`; t.prepend(l);
+        }
+    </script>
+</body>
+</html>

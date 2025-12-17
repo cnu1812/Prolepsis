@@ -1,0 +1,12 @@
+[
+  {
+    "id": "hello-world-flow",
+    "config": {
+      "src/hello/process_greeting_step.py": {
+        "x": 0,
+        "y": 34,
+        "sourceHandlePosition": "right"
+      }
+    }
+  }
+]
