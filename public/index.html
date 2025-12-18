@@ -3,7 +3,6 @@
 <head>
     <title>PROLEPSIS</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         
@@ -18,28 +17,20 @@
         }
         @keyframes scan { 0% { left: -10%; } 100% { left: 110%; } }
 
-        
+       
         .hud-header { position: absolute; top: 0; width: 100%; height: 65px; background: rgba(2, 5, 15, 0.95); border-bottom: 2px solid #00f3ff; z-index: 20; display: flex; align-items: center; padding: 0 25px; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); }
         .hud-title { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #fff; text-shadow: 0 0 10px #00f3ff; }
 
-        
-        .hud-sidebar { position: absolute; top: 85px; left: 25px; width: 360px; bottom: 240px; background: rgba(2, 6, 15, 0.9); border: 1px solid #1a3c6e; backdrop-filter: blur(10px); z-index: 10; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        /* --- SIDEBAR --- */
+        .hud-sidebar { position: absolute; top: 85px; left: 25px; width: 360px; bottom: 40px; background: rgba(2, 6, 15, 0.9); border: 1px solid #1a3c6e; backdrop-filter: blur(10px); z-index: 10; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         .ship-card { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px; font-size: 12px; cursor: pointer; background: rgba(0, 20, 40, 0.2); transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
         .ship-card:hover { background: rgba(0, 243, 255, 0.1); border-left: 4px solid #00f3ff; }
 
-        
-        .chart-panel {
-            position: absolute; bottom: 25px; left: 25px; width: 360px; height: 200px;
-            background: rgba(0, 0, 0, 0.85); border: 1px solid #00f3ff;
-            z-index: 10; padding: 10px; backdrop-filter: blur(5px);
-        }
-        .chart-title { font-size: 10px; color: #00f3ff; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; }
-
-        
+        /* --- DETAILS PANEL --- */
         .details-panel { position: absolute; top: 85px; right: 25px; width: 350px; background: rgba(5, 8, 20, 0.95); border: 1px solid #00f3ff; z-index: 30; padding: 20px; display: none; box-shadow: 0 0 40px rgba(0, 243, 255, 0.2); backdrop-filter: blur(10px); max-height: 80vh; overflow-y: auto; }
         .d-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; border-bottom: 1px solid #222; padding-bottom: 4px; }
         
-        
+        /* --- ADMIN --- */
         .admin-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid #ff0050; }
         .admin-title { color: #ff0050; font-weight: bold; letter-spacing: 2px; font-size: 12px; margin-bottom: 10px; display: block; }
         .admin-select { width: 100%; background: #111; border: 1px solid #444; color: #fff; padding: 8px; margin-bottom: 10px; font-family: monospace; }
@@ -48,7 +39,17 @@
         .admin-btn-blue { border-color: #00f3ff; color: #00f3ff; background: #001020; }
         .admin-btn-blue:hover { background: #00f3ff; color: #000; }
 
-        
+        /* --- AUDIO BUTTON --- */
+        .audio-btn { 
+            width: 100%; background: rgba(0, 243, 255, 0.1); border: 1px solid #00f3ff; color: #00f3ff; 
+            padding: 10px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-size: 12px; font-weight: bold; transition: 0.3s;
+        }
+        .audio-btn:hover { background: #00f3ff; color: #000; }
+        .audio-wave { height: 10px; width: 3px; background: currentColor; animation: wave 1s infinite; }
+        @keyframes wave { 0%,100% { height: 5px; } 50% { height: 15px; } }
+
+        /* --- ALERTS --- */
         .alert-btn { position: absolute; top: 120px; right: 50%; transform: translateX(50%); background: #ff0050; color: #fff; padding: 15px 50px; z-index: 50; font-weight: 900; letter-spacing: 2px; border: 2px solid #fff; cursor: pointer; display: none; box-shadow: 0 0 50px #ff0050; animation: pulse-alert 0.8s infinite alternate; }
         @keyframes pulse-alert { from { transform: translateX(50%) scale(1); } to { transform: translateX(50%) scale(1.05); } }
 
@@ -57,7 +58,13 @@
         .secure-input { width: 100%; padding: 15px; margin: 10px 0; background: #111; border: 1px solid #444; color: #fff; font-size: 28px; text-align: center; letter-spacing: 10px; font-family: monospace; box-sizing: border-box; }
         .reason-input { width: 100%; padding: 10px; margin: 0 0 20px 0; background: #111; border: 1px solid #444; color: #ccc; font-size: 14px; font-family: monospace; box-sizing: border-box; }
 
-        
+        /* COUNCIL WIDGET */
+        .council-grid { display: flex; gap: 5px; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
+        .council-card { flex: 1; background: #111; padding: 5px; text-align: center; border: 1px solid #333; border-radius: 4px; }
+        .c-score { font-size: 14px; font-weight: bold; display: block; }
+        .c-name { font-size: 8px; color: #888; letter-spacing: 1px; }
+
+        /* --- UTILS --- */
         .btn-neon { background: transparent; border: 1px solid #00f3ff; color: #00f3ff; padding: 8px 20px; cursor: pointer; font-weight: bold; letter-spacing: 1px; transition: 0.3s; }
         .btn-neon:hover { background: #00f3ff; color: #000; box-shadow: 0 0 20px #00f3ff; }
         .btn-auth { background: #ff0050; color: #fff; border:none; padding:15px 30px; font-weight:bold; cursor:pointer; font-size: 14px; letter-spacing: 2px;}
@@ -74,11 +81,11 @@
 
         @keyframes flashRed { 0% { background: rgba(255, 23, 68, 0.1); } 50% { background: rgba(255, 23, 68, 0.3); } 100% { background: rgba(255, 23, 68, 0.1); } }
 
-        
+        /* --- BLACK BOX --- */
         .replay-slider { width: 100%; height: 4px; background: #333; outline: none; margin-top: 10px; -webkit-appearance: none; }
         .replay-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: #00f3ff; cursor: pointer; border-radius: 50%; box-shadow: 0 0 10px #00f3ff; }
 
-        
+        /* --- LOGS --- */
         .kernel-log { position: absolute; bottom: 30px; right: 30px; width: 400px; height: 200px; background: rgba(0,0,0,0.8); border: 1px solid #333; color: #00ff88; font-size: 11px; padding: 15px; overflow: hidden; border-top: 2px solid #00ff88; pointer-events: none; }
         
         #diag-box { position: absolute; top: 70px; left: 10px; background: red; color: white; padding: 5px; font-size: 10px; z-index: 9999; display: none; }
@@ -91,7 +98,7 @@
     <div id="diag-box"></div>
 
     <div class="hud-header">
-        <div class="hud-title">PROLEPSIS </div>
+        <div class="hud-title">PROLEPSIS</div>
         <div style="margin-left:auto; display:flex; align-items:center; gap:20px;">
             <div style="text-align:right;">
                 <div style="font-size:10px; color:#888;">ACTIVE VESSELS</div>
@@ -106,11 +113,6 @@
         <div id="ship-list" style="overflow-y: auto; flex: 1;"></div>
     </div>
 
-    <div class="chart-panel">
-        <div class="chart-title">FLEET RISK AGGREGATE</div>
-        <canvas id="riskChart"></canvas>
-    </div>
-
     <div id="details-panel" class="details-panel">
         <h3 style="margin-top:0; color:#00f3ff; border-bottom: 1px solid #333; padding-bottom: 10px;" id="d-id">SHIP-0000</h3>
         
@@ -122,6 +124,28 @@
             <div class="d-row"><span style="color:#888">TYPE</span> <span id="d-type">--</span></div>
             <div style="margin-top:15px; font-size:10px; color:#888;">LATEST LOG:</div>
             <div id="d-log" style="color:#00f3ff; font-size:11px; margin-top: 5px; font-family: monospace;">--</div>
+            
+            <div id="council-widget" class="council-grid" style="display:none;">
+                <div class="council-card" id="c-meteo">
+                    <span class="c-name">METEO</span>
+                    <span class="c-score" id="s-meteo">--</span>
+                </div>
+                <div class="council-card" id="c-econ">
+                    <span class="c-name">ECON</span>
+                    <span class="c-score" id="s-econ">--</span>
+                </div>
+                <div class="council-card" id="c-strat">
+                    <span class="c-name">STRAT</span>
+                    <span class="c-score" id="s-strat">--</span>
+                </div>
+            </div>
+
+            <button class="audio-btn" onclick="playCaptainVoice()">
+                <div class="audio-wave"></div>
+                <div class="audio-wave" style="animation-delay:0.1s"></div>
+                <div class="audio-wave" style="animation-delay:0.2s"></div>
+                PLAY CAPTAIN'S LOG
+            </button>
         </div>
 
         <div style="margin-top:15px; padding-top:15px; border-top:1px solid #333;">
@@ -137,7 +161,7 @@
             <input type="password" id="admin-key" class="admin-select" placeholder="ADMIN KEY (admin123)">
             
             <button class="admin-btn" style="border-color: #00ff88; color: #00ff88; background: #002211; margin-bottom: 15px;" onclick="sendAdminCmd('TEST_ALERT')">
-                 SEND TEST SMS
+                📱 SEND TEST SMS
             </button>
 
             <input type="text" id="admin-reason" class="admin-select" placeholder="REASON / LOG ENTRY...">
@@ -213,37 +237,40 @@
             } catch (e) {}
         }
 
+      
+        function playCaptainVoice() {
+            if (!selectedShipData) return;
+            
+            
+            const id = selectedShipData.id.replace("VESSEL-", "Vessel ");
+            const log = document.getElementById('d-log').innerText;
+            const status = selectedShipData.status.replace("_", " ");
+            
+            
+            let script = `Command, this is ${id}. Status is ${status}. ${log}. Over.`;
+            
+            
+            if (status.includes("REROUTED") || status.includes("STORM")) {
+                script = `MAYDAY MAYDAY. This is ${id}. Critical alert. ${log}. Requesting immediate support.`;
+            }
+
+            
+            const u = new SpeechSynthesisUtterance(script);
+            u.rate = 0.9; 
+            u.pitch = 0.8; 
+            
+            
+            const voices = window.speechSynthesis.getVoices();
+            const engVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            if (engVoice) u.voice = engVoice;
+            
+            window.speechSynthesis.cancel(); 
+            window.speechSynthesis.speak(u);
+        }
+
         
         const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 18, opacity: 0.9 }).addTo(map);
-
-        
-        const ctx = document.getElementById('riskChart').getContext('2d');
-        const riskChart = new Chart(ctx, {
-            type: 'line',
-            data: { 
-                labels: Array(20).fill(''), 
-                datasets: [{ 
-                    label: 'RISK INDEX', 
-                    data: Array(20).fill(0), 
-                    borderColor: '#00f3ff', 
-                    borderWidth: 2, 
-                    pointRadius: 0,
-                    tension: 0.4,
-                    fill: 'start',
-                    backgroundColor: 'rgba(0, 243, 255, 0.1)'
-                }] 
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { 
-                    x: { display: false }, 
-                    y: { min: 0, max: 10, grid: { color: '#222' }, ticks: { color: '#00f3ff', font: { size: 9 } } } 
-                },
-                animation: { duration: 0 } 
-            }
-        });
 
         const ships = {}; 
         let pendingShipId = null;
@@ -278,8 +305,6 @@
                 const list = document.getElementById('ship-list');
                 list.innerHTML = '';
                 
-                let currentRisk = 0;
-
                 fleet.forEach(ship => {
                     let cssClass = 'c-arctic'; let hexColor = '#ffffff';
                     
@@ -287,12 +312,12 @@
                     if (ship.routeName.includes("Atlantic")) { cssClass='c-atlantic'; hexColor='#d500f9'; }
                     if (ship.routeName.includes("Suez")) { cssClass='c-suez'; hexColor='#ffea00'; }
                     
-                    if (ship.status === 'MAINTENANCE_REQUIRED') { cssClass='c-maint'; hexColor='#ff9100'; currentRisk += 1; }
-                    if (ship.status === 'SLOW_STEAMING') { cssClass='c-slow'; hexColor='#00ff88'; currentRisk += 0.5; }
+                    if (ship.status === 'MAINTENANCE_REQUIRED') { cssClass='c-maint'; hexColor='#ff9100'; }
+                    if (ship.status === 'SLOW_STEAMING') { cssClass='c-slow'; hexColor='#00ff88'; }
                     if (ship.status === 'AWAITING_PILOT') { cssClass='c-pilot'; hexColor='#b388ff'; }
 
-                    if (ship.status.includes("REROUTED") || ship.status === 'QUARANTINED') { cssClass='c-danger'; hexColor='#ff1744'; currentRisk += 3; }
-                    if (ship.status === 'AWAITING_ORDERS') { cssClass='c-suez'; hexColor='#ffea00'; currentRisk += 2; }
+                    if (ship.status.includes("REROUTED") || ship.status === 'QUARANTINED') { cssClass='c-danger'; hexColor='#ff1744'; }
+                    if (ship.status === 'AWAITING_ORDERS') { cssClass='c-suez'; hexColor='#ffea00'; }
 
                     updateMapData(ship, hexColor);
 
@@ -309,14 +334,6 @@
                     }
                 });
 
-                
-                const avgRisk = fleet.length > 0 ? (currentRisk / fleet.length) * 5 : 0;
-                riskChart.data.datasets[0].data.shift();
-                riskChart.data.datasets[0].data.push(avgRisk);
-                if (avgRisk > 2) riskChart.data.datasets[0].borderColor = '#ff1744';
-                else riskChart.data.datasets[0].borderColor = '#00f3ff';
-                riskChart.update();
-
                 const pending = fleet.find(s => s.status === 'AWAITING_ORDERS');
                 if (pending) {
                     if (pendingShipId !== pending.id) {
@@ -324,6 +341,13 @@
                         pendingReason = pending.logs[pending.logs.length-1];
                         map.flyTo(ships[pending.id].marker.getLatLng(), 5, { duration: 1.5 });
                         log(`INTERVENTION REQUIRED: ${pending.id}`);
+                        
+                        
+                        if(window.speechSynthesis) {
+                            const u = new SpeechSynthesisUtterance(`ALERT. Vessel ${pending.id.split('-')[1]} reporting ${pendingReason}. Awaiting instructions.`);
+                            u.rate = 1.1; 
+                            window.speechSynthesis.speak(u);
+                        }
                     }
                     document.getElementById('alert-btn').style.display = 'block';
                 } else {
@@ -374,27 +398,61 @@
         }
 
         async function sendAdminCmd(type) {
-            if(!selectedShipData && type !== 'TEST_ALERT') return;
+            
+            if (!selectedShipData && type !== 'TEST_ALERT') {
+                alert(" ERROR: Please select a ship first!");
+                return;
+            }
+
             const pass = document.getElementById('admin-key').value;
             const reason = document.getElementById('admin-reason').value;
+            
+            // 2. Validate Password
+            if (!pass) {
+                alert(" ERROR: Enter Admin Password (admin123)");
+                return;
+            }
+
             let payload = {};
             let mId = selectedShipData ? selectedShipData.id : "SYSTEM";
 
             if (type === 'FORCE_REROUTE') {
                 const routeKey = document.getElementById('route-select').value;
+                if(!ROUTE_PATHS[routeKey]) return alert("Route Error");
                 payload = { routeName: `MANUAL_${routeKey}`, path: ROUTE_PATHS[routeKey] };
             } else if (type === 'SET_STATUS') {
                 payload = { status: document.getElementById('status-select').value };
             }
 
-            const res = await fetch('/admin-command', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ missionId: mId, action: type, payload, reason, password: pass })
-            });
-            if(res.status === 401) { sfx('err'); alert("ACCESS DENIED: Check Admin Key"); }
-            else if(res.status === 200) { sfx('ok'); alert("COMMAND EXECUTED"); }
-        }
+            
+            try {
+                const res = await fetch('/admin-command', {
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        missionId: mId, 
+                        action: type, 
+                        payload, 
+                        reason, 
+                        password: pass 
+                    })
+                });
 
+                const data = await res.json();
+
+                if (res.status === 200) {
+                    sfx('ok');
+                    alert(` SUCCESS: ${data.message}`);
+                    
+                    if(selectedShipData) showDetails(selectedShipData); 
+                } else {
+                    sfx('err');
+                    alert(` FAILED: ${data.error}`);
+                }
+            } catch (e) {
+                alert(` NETWORK ERROR: ${e.message}`);
+            }
+        }
         function showDetails(ship) {
             selectedShipData = ship;
             document.getElementById('details-panel').style.display = 'block';
@@ -408,17 +466,47 @@
             document.getElementById('d-cargo').innerText = ship.cargo;
             document.getElementById('d-type').innerText = ship.type;
             
+            
             let weatherTxt = "CLEAR";
             const lastLog = ship.logs[ship.logs.length-1] || "";
-            if (lastLog.includes("Weather")) weatherTxt = lastLog.split(": ")[1] || "DATA RECEIVED";
-            if (lastLog.includes("LIVE WEATHER")) { weatherTxt = "STORM ALERT"; document.getElementById('d-weather').style.color = "#ff1744"; }
-            else { document.getElementById('d-weather').style.color = "#00ff88"; }
+            if (lastLog.includes("Weather")) weatherTxt = lastLog.split(": ")[1] || "DATA";
+            if (lastLog.includes("COUNCIL")) weatherTxt = "AI GOVERNANCE"; 
             document.getElementById('d-weather').innerText = weatherTxt.toUpperCase();
-
             document.getElementById('d-log').innerText = lastLog;
+        
+            
             const sEl = document.getElementById('d-status');
             sEl.style.color = ship.status.includes('REROUTED') ? '#ff1744' : '#00f3ff';
+        
+            
+            const cWidget = document.getElementById('council-widget');
+            
+            
+            
+            if (lastLog.includes("COUNCIL")) {
+                cWidget.style.display = 'flex';
+                
+                
+                const angryAgent = lastLog.split(" ")[1]; 
+                
+                updateAgentCard('meteo', '🌩️', angryAgent === 'METEOROLOGIST' ? 95 : 12);
+                updateAgentCard('econ', '💰', angryAgent === 'ECONOMIST' ? 88 : 5);
+                updateAgentCard('strat', '⚔️', angryAgent === 'STRATEGIST' ? 75 : 0);
+            } else {
+                cWidget.style.display = 'none';
+            }
         }
+        
+        function updateAgentCard(id, icon, score) {
+            const el = document.getElementById('c-' + id);
+            const sEl = document.getElementById('s-' + id);
+            sEl.innerText = `${icon} ${score}`;
+            
+            if (score > 80) { el.style.borderColor = '#ff1744'; el.style.color = '#ff1744'; }
+            else if (score > 40) { el.style.borderColor = '#ffea00'; el.style.color = '#ffea00'; }
+            else { el.style.borderColor = '#333'; el.style.color = '#666'; }
+        }
+        
         function updateReplay(val) {
             if(!selectedShipData || !selectedShipData.history) return;
             if(val >= 100) { document.getElementById('replay-time').innerText = "LIVE"; updateDetailsUI(selectedShipData); } 

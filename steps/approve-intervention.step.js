@@ -11,7 +11,7 @@ export const config = {
   
     
     if (password !== 'admin123') {
-      logger.warn(`⛔ DENIED: Incorrect Password for ${missionId}`);
+      logger.warn(` DENIED: Incorrect Password for ${missionId}`);
       return { status: 401, body: { error: "WRONG PASSWORD. Try: admin123" } };
     }
   

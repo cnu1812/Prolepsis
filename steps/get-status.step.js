@@ -3,7 +3,7 @@ export const config = {
     type: 'api', 
     path: '/status', 
     method: 'GET',
-    emits: [] // <--- ADD THIS LINE
+    emits: [] 
   };
   
   export const handler = async (req, { state }) => {
