@@ -21,6 +21,10 @@
         .hud-header { position: absolute; top: 0; width: 100%; height: 65px; background: rgba(2, 5, 15, 0.95); border-bottom: 2px solid #00f3ff; z-index: 20; display: flex; align-items: center; padding: 0 25px; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15); }
         .hud-title { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #fff; text-shadow: 0 0 10px #00f3ff; }
 
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
         /* --- SIDEBAR --- */
         .hud-sidebar { position: absolute; top: 85px; left: 25px; width: 360px; bottom: 40px; background: rgba(2, 6, 15, 0.9); border: 1px solid #1a3c6e; backdrop-filter: blur(10px); z-index: 10; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         .ship-card { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px; font-size: 12px; cursor: pointer; background: rgba(0, 20, 40, 0.2); transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
@@ -157,11 +161,11 @@
         </div>
 
         <div class="admin-section">
-            <span class="admin-title">⚠️ ADMIN OVERRIDE CONTROLS</span>
+            <span class="admin-title"> ADMIN OVERRIDE CONTROLS</span>
             <input type="password" id="admin-key" class="admin-select" placeholder="ADMIN KEY (admin123)">
             
             <button class="admin-btn" style="border-color: #00ff88; color: #00ff88; background: #002211; margin-bottom: 15px;" onclick="sendAdminCmd('TEST_ALERT')">
-                📱 SEND TEST SMS
+                 SEND TEST SMS
             </button>
 
             <input type="text" id="admin-reason" class="admin-select" placeholder="REASON / LOG ENTRY...">
@@ -190,7 +194,7 @@
         <button class="btn-neon" style="width:100%; margin-top:20px; border-color: #444; color: #666;" onclick="closeDetails()">CLOSE</button>
     </div>
 
-    <div id="alert-btn" class="alert-btn" onclick="openSecurity()">⚠️ ACTION REQUIRED</div>
+    <div id="alert-btn" class="alert-btn" onclick="openSecurity()">ACTION REQUIRED</div>
 
     <div id="security-modal" class="modal-overlay">
         <div class="secure-box">
@@ -238,34 +242,50 @@
         }
 
       
-        function playCaptainVoice() {
+        async function playCaptainVoice() {
             if (!selectedShipData) return;
             
             
-            const id = selectedShipData.id.replace("VESSEL-", "Vessel ");
-            const log = document.getElementById('d-log').innerText;
-            const status = selectedShipData.status.replace("_", " ");
+            const text = `This is ${selectedShipData.id}. We are currently ${selectedShipData.status.replace('_', ' ')}. ${selectedShipData.logs[selectedShipData.logs.length-1]}. Over.`;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.1;
+            utterance.pitch = 0.8;
+        
+            
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
             
             
-            let script = `Command, this is ${id}. Status is ${status}. ${log}. Over.`;
-            
-            
-            if (status.includes("REROUTED") || status.includes("STORM")) {
-                script = `MAYDAY MAYDAY. This is ${id}. Critical alert. ${log}. Requesting immediate support.`;
+            const bufferSize = ctx.sampleRate * 4; 
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1; 
             }
-
-            
-            const u = new SpeechSynthesisUtterance(script);
-            u.rate = 0.9; 
-            u.pitch = 0.8; 
+        
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
             
             
-            const voices = window.speechSynthesis.getVoices();
-            const engVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
-            if (engVoice) u.voice = engVoice;
+            const bandpass = ctx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = 1000; 
             
-            window.speechSynthesis.cancel(); 
-            window.speechSynthesis.speak(u);
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.value = 0.15; 
+        
+            noise.connect(bandpass).connect(noiseGain).connect(ctx.destination);
+            
+            
+            noise.start();
+            
+            
+            window.speechSynthesis.speak(utterance);
+        
+            
+            utterance.onend = () => {
+                noise.stop();
+                ctx.close();
+            };
         }
 
         
@@ -298,9 +318,12 @@
         async function sync() {
             try {
                 const res = await fetch('/fleet');
-                if (!res.ok) throw new Error("API Failed");
+                if (!res.ok) return; 
+                
                 const fleet = await res.json();
                 document.getElementById('stat-count').innerText = fleet.length;
+
+                if (fleet.length === 0) return;
 
                 const list = document.getElementById('ship-list');
                 list.innerHTML = '';
@@ -314,48 +337,96 @@
                     
                     if (ship.status === 'MAINTENANCE_REQUIRED') { cssClass='c-maint'; hexColor='#ff9100'; }
                     if (ship.status === 'SLOW_STEAMING') { cssClass='c-slow'; hexColor='#00ff88'; }
-                    if (ship.status === 'AWAITING_PILOT') { cssClass='c-pilot'; hexColor='#b388ff'; }
+                    if (ship.status === 'YIELDING_WAY') { cssClass='c-maint'; hexColor='#ff9100'; } 
+                    if (ship.status === 'PRIORITY_PASSAGE') { cssClass='c-pilot'; hexColor='#b388ff'; }
 
                     if (ship.status.includes("REROUTED") || ship.status === 'QUARANTINED') { cssClass='c-danger'; hexColor='#ff1744'; }
-                    if (ship.status === 'AWAITING_ORDERS') { cssClass='c-suez'; hexColor='#ffea00'; }
+
+                   
+                    const recentLogs = ship.logs.slice(-5); 
+                    const commsLog = recentLogs.find(l => l.includes("COMMS:"));
+                    
+                    if (commsLog) {
+                        
+                        if (window.lastComms !== commsLog) {
+                            console.log("🚀 FOUND CHAT IN HISTORY:", commsLog); 
+                            window.lastComms = commsLog; 
+                            if (typeof showGlobalComms === "function") {
+                                showGlobalComms(commsLog);
+                            }
+                        }
+                    }
+                    
 
                     updateMapData(ship, hexColor);
 
                     const item = document.createElement('div');
                     item.className = `ship-card ${cssClass}`;
                     item.onclick = () => { showDetails(ship); map.flyTo(ships[ship.id].marker.getLatLng(), 5); };
-                    let logTxt = ship.logs[ship.logs.length-1] || "System OK";
-                    item.innerHTML = `<div><strong style="color:${hexColor}">${ship.id}</strong><br><span style="color:#888; font-size:10px;">${ship.routeName}</span></div><div class="status-pill" style="background:${hexColor}">${ship.status.replace('_',' ')}</div>`;
+                    
+                    
+                    const lastLog = ship.logs[ship.logs.length-1] || "";
+                    let displayLog = commsLog ? "📡 ENCRYPTED SIGNAL ACTIVE" : (lastLog || "System OK");
+                    
+                    item.innerHTML = `<div><strong style="color:${hexColor}">${ship.id}</strong><br><span style="color:#888; font-size:10px;">${ship.routeName}</span></div><div class="status-pill" style="background:${hexColor}">${ship.status.replace('_',' ')}</div><div style="font-size:9px; color:#666; margin-top:2px;">${displayLog.substring(0,30)}</div>`;
                     list.appendChild(item);
 
-                    if(selectedShipData && selectedShipData.id === ship.id && document.getElementById('replay-time').innerText === 'LIVE') {
+                    if(selectedShipData && selectedShipData.id === ship.id) {
                         selectedShipData = ship;
                         updateDetailsUI(ship);
                     }
                 });
 
-                const pending = fleet.find(s => s.status === 'AWAITING_ORDERS');
-                if (pending) {
-                    if (pendingShipId !== pending.id) {
-                        sfx('alert'); pendingShipId = pending.id;
-                        pendingReason = pending.logs[pending.logs.length-1];
-                        map.flyTo(ships[pending.id].marker.getLatLng(), 5, { duration: 1.5 });
-                        log(`INTERVENTION REQUIRED: ${pending.id}`);
-                        
-                        
-                        if(window.speechSynthesis) {
-                            const u = new SpeechSynthesisUtterance(`ALERT. Vessel ${pending.id.split('-')[1]} reporting ${pendingReason}. Awaiting instructions.`);
-                            u.rate = 1.1; 
-                            window.speechSynthesis.speak(u);
-                        }
+                
+                const dangerShip = fleet.find(s => s.status.includes('REROUTED') || s.status === 'QUARANTINED');
+                const tickerEl = document.getElementById('news-feed');
+                if (dangerShip && tickerEl) {
+                    const newMsg = `⚠️ URGENT: ${dangerShip.id} REROUTED (${dangerShip.routeName}) - AI RISK DETECTED`;
+                    if (!tickerEl.innerText.includes(dangerShip.id)) {
+                        tickerEl.innerText = `${newMsg}   ///   ${tickerEl.innerText}`;
                     }
-                    document.getElementById('alert-btn').style.display = 'block';
-                } else {
-                    document.getElementById('alert-btn').style.display = 'none';
-                    document.getElementById('security-modal').style.display = 'none';
-                    pendingShipId = null;
                 }
-            } catch(e) { console.error(e); }
+
+            } catch(e) { console.error("Sync Error:", e); }
+        }
+
+
+        function showGlobalComms(logString) {
+            const rawChat = logString.replace("COMMS:", "").trim();
+            const lines = rawChat.split("|");
+            
+            const commsBox = document.getElementById('comms-overlay');
+            const commsBody = document.getElementById('comms-body');
+            
+            if (!commsBox) return; 
+
+            
+            sfx('ok'); 
+
+            commsBox.style.display = 'block';
+            commsBox.style.animation = "slideIn 0.5s ease-out";
+            
+            commsBody.innerHTML = lines.map(line => {
+                line = line.trim();
+                
+                const isFirstSpeaker = line.startsWith(lines[0].substring(0, 5));
+                const color = isFirstSpeaker ? '#00f3ff' : '#ff9100'; 
+                const align = isFirstSpeaker ? 'left' : 'right';
+                
+                return `
+                    <div style="margin-bottom: 8px; text-align: ${align}; opacity: 0; animation: fadeIn 0.3s forwards;">
+                        <span style="background: rgba(0,20,40,0.8); padding: 6px 10px; border-left: 3px solid ${color}; color: #fff; font-size: 11px; display: inline-block; box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+                            ${line}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+
+           
+            if (window.commsTimer) clearTimeout(window.commsTimer);
+            window.commsTimer = setTimeout(() => { 
+                commsBox.style.display = 'none'; 
+            }, 12000);
         }
 
         function updateMapData(shipData, color) {
@@ -398,34 +469,55 @@
         }
 
         async function sendAdminCmd(type) {
-            
             if (!selectedShipData && type !== 'TEST_ALERT') {
-                alert(" ERROR: Please select a ship first!");
+                alert("ERROR: Please select a ship first!");
                 return;
             }
 
             const pass = document.getElementById('admin-key').value;
             const reason = document.getElementById('admin-reason').value;
             
-            // 2. Validate Password
             if (!pass) {
                 alert(" ERROR: Enter Admin Password (admin123)");
                 return;
             }
 
-            let payload = {};
-            let mId = selectedShipData ? selectedShipData.id : "SYSTEM";
-
-            if (type === 'FORCE_REROUTE') {
-                const routeKey = document.getElementById('route-select').value;
-                if(!ROUTE_PATHS[routeKey]) return alert("Route Error");
-                payload = { routeName: `MANUAL_${routeKey}`, path: ROUTE_PATHS[routeKey] };
-            } else if (type === 'SET_STATUS') {
-                payload = { status: document.getElementById('status-select').value };
-            }
-
             
+            if (selectedShipData) {
+                if (type === 'FORCE_REROUTE') {
+                    const routeKey = document.getElementById('route-select').value;
+                    // Update Text
+                    document.getElementById('d-route').innerText = `MANUAL_${routeKey}`;
+                    document.getElementById('d-status').innerText = "REROUTING...";
+                    document.getElementById('d-status').style.color = "#ff1744"; 
+                    
+                    selectedShipData.routeName = `MANUAL_${routeKey}`;
+                    selectedShipData.status = "REROUTING...";
+                } 
+                else if (type === 'SET_STATUS') {
+                    const newStatus = document.getElementById('status-select').value;
+                    
+                    document.getElementById('d-status').innerText = newStatus;
+                    document.getElementById('d-status').style.color = "#ff1744"; 
+                    
+                    selectedShipData.status = newStatus;
+                }
+               
+                sfx('ok');
+            }
+        
             try {
+                let payload = {};
+                let mId = selectedShipData ? selectedShipData.id : "SYSTEM";
+
+                if (type === 'FORCE_REROUTE') {
+                    const routeKey = document.getElementById('route-select').value;
+                    if(!ROUTE_PATHS[routeKey]) return; 
+                    payload = { routeName: `MANUAL_${routeKey}`, path: ROUTE_PATHS[routeKey] };
+                } else if (type === 'SET_STATUS') {
+                    payload = { status: document.getElementById('status-select').value };
+                }
+
                 const res = await fetch('/admin-command', {
                     method: 'POST', 
                     headers: {'Content-Type': 'application/json'},
@@ -438,19 +530,13 @@
                     })
                 });
 
-                const data = await res.json();
-
-                if (res.status === 200) {
-                    sfx('ok');
-                    alert(` SUCCESS: ${data.message}`);
-                    
-                    if(selectedShipData) showDetails(selectedShipData); 
-                } else {
+                if (res.status !== 200) {
+                   
                     sfx('err');
-                    alert(` FAILED: ${data.error}`);
+                    alert("⚠️ COMMAND FAILED ON SERVER");
                 }
             } catch (e) {
-                alert(` NETWORK ERROR: ${e.message}`);
+                console.error(e);
             }
         }
         function showDetails(ship) {
@@ -466,35 +552,73 @@
             document.getElementById('d-cargo').innerText = ship.cargo;
             document.getElementById('d-type').innerText = ship.type;
             
+          
+            let cost = 0;
+            if (ship.status.includes('REROUTED')) cost = 154200;
+            if (ship.status === 'QUARANTINED') cost = 2400000;
+            if (ship.status === 'YIELDING_WAY') cost = 1500; 
             
-            let weatherTxt = "CLEAR";
+            
             const lastLog = ship.logs[ship.logs.length-1] || "";
-            if (lastLog.includes("Weather")) weatherTxt = lastLog.split(": ")[1] || "DATA";
-            if (lastLog.includes("COUNCIL")) weatherTxt = "AI GOVERNANCE"; 
-            document.getElementById('d-weather').innerText = weatherTxt.toUpperCase();
-            document.getElementById('d-log').innerText = lastLog;
-        
+            const logElement = document.getElementById('d-log');
+            const commsBox = document.getElementById('comms-overlay'); 
+            const commsBody = document.getElementById('comms-body');
+
+            if (lastLog.includes("COMMS:")) {
+                
+                const rawChat = lastLog.replace("COMMS:", "").trim();
+                const lines = rawChat.split("|"); 
+                
+                
+                if (commsBox && commsBody) {
+                    commsBox.style.display = 'block';
+                    commsBody.innerHTML = lines.map(line => {
+                        line = line.trim();
+                        
+                        const isMe = line.includes(ship.id); 
+                        const color = isMe ? '#ff9100' : '#00f3ff';
+                        const align = isMe ? 'right' : 'left';
+                        
+                        return `
+                            <div style="margin-bottom: 6px; text-align: ${align};">
+                                <span style="background: rgba(0,0,0,0.5); padding: 4px 8px; border: 1px solid ${color}; color: ${color}; border-radius: 4px; display: inline-block;">
+                                    ${line}
+                                </span>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    
+                    if (window.commsTimer) clearTimeout(window.commsTimer);
+                    window.commsTimer = setTimeout(() => { 
+                        if(commsBox) commsBox.style.display = 'none'; 
+                    }, 15000);
+                }
+
+               
+                logElement.innerText = ">> ENCRYPTED SIGNAL RECEIVED <<";
+                logElement.style.color = "#ff9100";
+                logElement.style.animation = "flashRed 1s infinite";
+
+            } else {
+                
+                let weatherTxt = "CLEAR";
+                if (lastLog.includes("Weather")) weatherTxt = lastLog.split(": ")[1] || "DATA";
+                if (lastLog.includes("COUNCIL")) weatherTxt = "AI GOVERNANCE"; 
+                
+                document.getElementById('d-weather').innerText = weatherTxt.toUpperCase();
+                logElement.innerText = lastLog;
+                logElement.style.color = "#00f3ff";
+                logElement.style.animation = "none";
+                
+                
+                if (commsBox) commsBox.style.display = 'none';
+            }
+            
             
             const sEl = document.getElementById('d-status');
             sEl.style.color = ship.status.includes('REROUTED') ? '#ff1744' : '#00f3ff';
-        
             
-            const cWidget = document.getElementById('council-widget');
-            
-            
-            
-            if (lastLog.includes("COUNCIL")) {
-                cWidget.style.display = 'flex';
-                
-                
-                const angryAgent = lastLog.split(" ")[1]; 
-                
-                updateAgentCard('meteo', '🌩️', angryAgent === 'METEOROLOGIST' ? 95 : 12);
-                updateAgentCard('econ', '💰', angryAgent === 'ECONOMIST' ? 88 : 5);
-                updateAgentCard('strat', '⚔️', angryAgent === 'STRATEGIST' ? 75 : 0);
-            } else {
-                cWidget.style.display = 'none';
-            }
         }
         
         function updateAgentCard(id, icon, score) {
@@ -551,5 +675,13 @@
             l.innerText = `> ${msg}`; t.prepend(l);
         }
     </script>
+    <div id="comms-overlay" style="position: fixed; bottom: 80px; right: 20px; width: 350px; background: rgba(0, 10, 20, 0.95); border: 1px solid #00f3ff; border-radius: 5px; padding: 15px; display: none; font-family: monospace; z-index: 9999; box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);">
+        <div style="border-bottom: 1px solid #333; margin-bottom: 10px; padding-bottom: 5px; display: flex; justify-content: space-between;">
+            <span style="color: #00f3ff; font-weight: bold;">📡 INTER-SHIP COMMS</span>
+            <span style="color: #555; font-size: 10px;">ENCRYPTED CH-9</span>
+        </div>
+        <div id="comms-body" style="font-size: 12px; color: #ccc; line-height: 1.5;"></div>
+    </div>
+   
 </body>
 </html>

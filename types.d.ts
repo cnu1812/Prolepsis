@@ -16,15 +16,15 @@ declare module 'motia' {
     'GetStatus': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'GetFleet': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'ApproveIntervention': ApiRouteHandler<Record<string, unknown>, unknown, { topic: 'system.patch_route'; data: never }>
-    'TheHighCouncil': EventHandler<never, { topic: 'system.patch_route'; data: never }>
+    'AgentNegotiation': EventHandler<never, { topic: 'system.patch_route'; data: never }>
+    'AgentJudge': EventHandler<never, { topic: 'system.patch_route'; data: never }>
     'AdminCommand': ApiRouteHandler<Record<string, unknown>, unknown, { topic: 'system.patch_route'; data: never }>
     'PatchReality': EventHandler<never, never>
+    'DetectConflict': EventHandler<never, { topic: 'agent.negotiate'; data: never }>
     'SimulateFuture': EventHandler<never, { topic: 'ai.analyze_risk'; data: never } | { topic: 'mission.tick'; data: never }>
     'StartMission': ApiRouteHandler<Record<string, unknown>, unknown, { topic: 'mission.tick'; data: never }>
     'ServeDashboard': ApiRouteHandler<Record<string, unknown>, unknown, never>
-    'AgentMeteorologist': EventHandler<never, { topic: 'ai.vote'; data: never }>
-    'AgentStrategist': EventHandler<never, { topic: 'ai.vote'; data: never }>
-    'AgentEconomist': EventHandler<never, { topic: 'ai.vote'; data: never }>
+    'AgentMeteorologist': EventHandler<never, never>
   }
     
 }

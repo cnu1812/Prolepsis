@@ -19,10 +19,10 @@ export const handler = async (event, { state, emit, logger }) => {
     const newPos = ship.path[ship.pathIdx];
     await state.set(`mission:${missionId}`, missionId, ship);
   
-    logger.info(`🔮 PREDICTING FUTURE for ${missionId}...`);
+    logger.info(` PREDICTING FUTURE for ${missionId}...`);
   
     
-    if (!ship.adminOverride) {
+    if (!ship.adminOverride && Math.random() > 0.5) {
         await emit({
           topic: 'ai.analyze_risk',
           data: { 
@@ -33,7 +33,7 @@ export const handler = async (event, { state, emit, logger }) => {
           }
         });
     } else {
-        logger.info(`🔒 AI SILENCED for ${missionId} (Admin Override Active)`);
+        logger.info(`AI SILENCED for ${missionId} (Admin Override Active)`);
     }
     
     await setTimeout(3000); 

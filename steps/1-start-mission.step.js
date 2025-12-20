@@ -3,13 +3,16 @@ export const config = {
     type: 'api',
     path: '/start',
     method: 'POST',
-    emits: ['mission.tick'] 
+    emits: ['mission.tick']
   };
   
   export const handler = async (req, { state, emit, logger }) => {
-    logger.info("🚀 INITIATING MASSIVE FLEET DEPLOYMENT");
+    logger.info(" INITIATING FLEET DEPLOYMENT");
+  
+  
   
     const ships = [];
+    const shipIds = []; 
     const routeNames = ["Pacific Run", "Atlantic Cross", "Suez Express", "Arctic Circle"];
     
     
@@ -18,31 +21,34 @@ export const config = {
       const route = routeNames[i % routeNames.length];
       
       
-      let path = [[20, 0], [25, 5], [30, 10]]; 
-      if (route.includes("Pacific")) path = [[34, -118], [35, -120], [36, -125]];
-      if (route.includes("Suez")) path = [[19, 72], [20, 70], [21, 68]];
+      let path = [[34, -118], [21, -157], [35, 139]]; 
+      if (route.includes("Atlantic")) path = [[40, -74], [35, -40], [51, -0.1]];
+      if (route.includes("Suez")) path = [[19, 72], [12, 45], [30, 32], [37, 23]];
+      if (route.includes("Arctic")) path = [[64, -21], [70, 20], [68, 33]];
   
       const ship = {
         id,
         status: 'EN_ROUTE',
         routeName: route,
         cargo: i % 2 === 0 ? "LIQUID GAS" : "ELECTRONICS",
+        type: "Cargo Freighter",
         path: path,
         pathIdx: 0,
-        logs: ["System Initialized"],
+        logs: [`Log 001: System Initialized. Destination: ${route}`],
         history: []
       };
   
       
       await state.set(`mission:${id}`, id, ship);
       ships.push(ship);
+      shipIds.push(id); 
   
       
-      await emit({
-        topic: 'mission.tick', 
-        data: { missionId: id }
-      });
+      await emit({ topic: 'mission.tick', data: { missionId: id } });
     }
+  
+   
+    await state.set('system:registry', 'manifest', shipIds);
   
     return { status: 200, body: { message: "Fleet Deployed", count: ships.length } };
   };
