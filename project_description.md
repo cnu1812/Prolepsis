@@ -97,6 +97,9 @@ This project’s complexity managing multiple asynchronous agents, race conditio
     It is useless if it stays in the browser.
 
     - Critical alerts (e.g., "Piracy Detected") bypass the dashboard and push directly to the user's phone via SMS(Twilio).
+  
+    - ![WhatsApp Image 2025-12-20 at 20 13 00](https://github.com/user-attachments/assets/01d6bda1-e941-45ab-82d0-717a147bb71c)
+
 
     - Financial Impact Ticker: We calculate the real-time cost of every AI decision (e.g., +$154,200 Fuel Surcharge), translating abstract AI actions into concrete business value.
 
