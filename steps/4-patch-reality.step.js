@@ -2,7 +2,8 @@ export const config = {
     name: 'PatchReality',
     type: 'event',
     subscribes: ['system.patch_route'],
-    emits: []
+    emits: [],
+    flows: ['prolepsis-main']
 };
 
 export const handler = async (event, { state, logger }) => {

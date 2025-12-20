@@ -4,7 +4,8 @@ export const config = {
   name: 'SimulateFuture',
   type: 'event',
   subscribes: ['mission.tick'], 
-  emits: ['ai.analyze_risk', 'mission.tick'] 
+  emits: ['ai.analyze_risk', 'mission.tick'],
+  
 };
 
 export const handler = async (event, { state, emit, logger }) => {

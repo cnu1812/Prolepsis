@@ -2,7 +2,8 @@ export const config = {
     name: 'AgentNegotiation',
     type: 'event',
     subscribes: ['agent.negotiate'],
-    emits: ['system.patch_route', 'ui.comms_log']
+    emits: ['system.patch_route', 'ui.comms_log'],
+    flows: ['prolepsis-main']
   };
   
   export const handler = async (event, { emit, logger }) => {

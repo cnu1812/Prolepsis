@@ -8,5 +8,38 @@
         "sourceHandlePosition": "right"
       }
     }
+  },
+  {
+    "id": "prolepsis-main",
+    "config": {
+      "steps/visual-voice.step.js": {
+        "x": 165,
+        "y": 157
+      },
+      "steps/visual-message.step.js": {
+        "x": 25,
+        "y": 288
+      },
+      "steps/visual-dashboard.step.js": {
+        "x": 763,
+        "y": 335
+      },
+      "steps/agent-negotiation.step.js": {
+        "x": 416,
+        "y": 52
+      },
+      "steps/4-patch-reality.step.js": {
+        "x": 781,
+        "y": -59
+      },
+      "steps/3-detect-conflict.step.js": {
+        "x": 204,
+        "y": -66
+      },
+      "steps/1-start-mission.step.js": {
+        "x": -332,
+        "y": 119
+      }
+    }
   }
 ]

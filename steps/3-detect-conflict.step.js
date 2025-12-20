@@ -2,7 +2,8 @@ export const config = {
     name: 'DetectConflict',
     type: 'event',
     subscribes: ['mission.tick'], 
-    emits: ['agent.negotiate']
+    emits: ['agent.negotiate'],
+    flows: ['prolepsis-main']
   };
   
   export const handler = async (event, { state, emit, logger }) => {

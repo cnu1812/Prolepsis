@@ -3,7 +3,8 @@ export const config = {
     type: 'api',
     path: '/start',
     method: 'POST',
-    emits: ['mission.tick']
+    emits: ['mission.tick'],
+    flows: ['prolepsis-main']
   };
   
   export const handler = async (req, { state, emit, logger }) => {
