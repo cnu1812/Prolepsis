@@ -51,6 +51,8 @@ It treats every ship in the fleet not as a database entry, but as an independent
 
 # 3. Technical Architecture (The "How")
 
+![proarchi](https://github.com/user-attachments/assets/0dbab9e8-a2a7-41d1-bc03-061a9f1dae17)
+
 Prolepsis is built on an Event-Driven Micro-Step Architecture. It decouples "Intelligence" from "Reality".
 
 # 4. Motia
@@ -124,6 +126,9 @@ This project’s complexity managing multiple asynchronous agents, race conditio
 
 1. With 5+ agents reading and writing to the same ship object simultaneously, encountered race conditions where the "Weather Agent" would overwrite the "Negotiation Agent's" status update. The Fix: Have implemented the "Patch Reality" Pattern. No agent is allowed to write to the database directly. Instead, they emit `system.patch_route` events. The PatchReality step acts as a serializer, applying updates sequentially to ensure atomic consistency.
 2. CPU Overload in $O(N^2)$ Conflict Detection, checking every ship against every other ship for collisions grew exponentially. With just 10 ships, the conflict loop consumed 100% CPU. The Fix: So, implemented a Stochastic Registry. Instead of checking all neighbors, the `DetectConflict` step randomly samples a subset of the fleet registry every tick. Over the course of 3 seconds, this statistically guarantees collision detection with 95% less CPU usage.
+
+![cpufix](https://github.com/user-attachments/assets/215f0800-7570-4de6-8af1-3fc9cc4a3606)
+
 
 # 7. Conclusion
 
