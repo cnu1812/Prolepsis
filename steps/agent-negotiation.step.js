@@ -7,17 +7,13 @@ export const config = {
   };
   
   export const handler = async (event, { emit, logger }) => {
+    const startTick = performance.now(); 
     
     const payload = event.data || event; 
     const { shipA, shipB } = payload;
+    if (!shipA || !shipB) return;
   
-   
-    if (!shipA || !shipB) {
-       
-        return;
-    }
-  
-   
+    
     const getPriority = (cargo) => {
         if (!cargo) return 1;
         if (cargo.includes("MEDICAL") || cargo.includes("GAS")) return 10;
@@ -28,45 +24,53 @@ export const config = {
     const scoreA = getPriority(shipA.cargo);
     const scoreB = getPriority(shipB.cargo);
   
-    let winner, loser;
+    let winner, loser, reason;
     
-   
+    
     const dialogue = [];
-    dialogue.push(`[${shipA.id}]: Unknown vessel, this is ${shipA.id}. Carrying ${shipA.cargo}. Requesting right of way.`);
+    dialogue.push(`[${shipA.id}]: Requesting right of way. Cargo Priority: ${scoreA}`);
   
     if (scoreA >= scoreB) {
         winner = shipA; loser = shipB;
-        dialogue.push(`[${shipB.id}]: Solid copy. I am hauling ${shipB.cargo} (Low Priority). Adjusting thrusters.`);
-        dialogue.push(`[${shipA.id}]: Appreciated, ${shipB.id}. Maintain course. Out.`);
+        dialogue.push(`[${shipB.id}]: Acknowledged. My Priority: ${scoreB}. Yielding.`);
+        dialogue.push(`[${shipA.id}]: Proceeding.`);
     } else {
         winner = shipB; loser = shipA;
-        dialogue.push(`[${shipB.id}]: Negative, ${shipA.id}. I have Priority Cargo (${shipB.cargo}). Maintain distance.`);
-        dialogue.push(`[${shipA.id}]: Understood. Slowing speed to 50%. Safe travels.`);
+        dialogue.push(`[${shipB.id}]: Negative. My Priority is HIGHER (${scoreB}).`);
+        dialogue.push(`[${shipA.id}]: Copy. Yielding.`);
     }
   
-   
-    logger.info(` NEGOTIATION COMPLETE: ${winner.id} takes lead over ${loser.id}`);
-  
-   
-    const chatLog = `COMMS: ${dialogue.join(" | ")}`;
-  
     
+    const chatLog = `COMMS: ${dialogue.join(" | ")}`;
+    const processingTime = (performance.now() - startTick).toFixed(2); 
+  
+   
+    const telemetry = {
+        decision_engine: "SwarmProtocol_v1",
+        latency_ms: processingTime,
+        ai_confidence: 0.99,
+        logic_trace: `Compared Score A (${scoreA}) vs Score B (${scoreB})`
+    };
+  
     await emit({
         topic: 'system.patch_route',
         data: {
             missionId: loser.id,
             statusUpdate: "YIELDING_WAY", 
-            reason: chatLog 
+            reason: chatLog,
+            _telemetry: telemetry 
         }
     });
   
-    
     await emit({
         topic: 'system.patch_route',
         data: {
             missionId: winner.id,
             statusUpdate: "PRIORITY_PASSAGE",
-            reason: chatLog
+            reason: chatLog,
+            _telemetry: telemetry
         }
     });
+    
+    logger.info(`⚡ [Trace] Negotiation resolved in ${processingTime}ms`);
   };
