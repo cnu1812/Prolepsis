@@ -58,6 +58,9 @@ Prolepsis is built on an Event-Driven Micro-Step Architecture. It decouples "Int
 # 4. Motia
 This project’s complexity managing multiple asynchronous agents, race conditions, and state persistence usually requires a team of backend engineers and weeks of DevOps setup. Motia allowed me to build it in a single hackathon.
 
+![flow](https://github.com/user-attachments/assets/9987365f-6890-4947-aff2-c24d47c61967)
+
+
 1. **The "Polyglot" Advantage:** We needed raw data processing power for weather(Python) but fast, asynchronous I/O for the swarm negotiation (Node.js). Motia allowed us to mix agent-weather_step.py and agent-negotiation.step.js in the same pipeline seamlessly. The framework handles the inter-process communication (IPC) automatically.
 
 2. **Implicit State Management:** Traditional logic requires writing SQL INSERT and UPDATE queries for every movement. Motia’s state.get() and state.set() abstraction over Redis meant we could treat the database like a local memory object. This freed us to focus on logic rather than infrastructure.
@@ -79,6 +82,9 @@ This project’s complexity managing multiple asynchronous agents, race conditio
 
  2. Autonomous Swarm Negotiation 
 
+![conflict dectect agent](https://github.com/user-attachments/assets/8a0b7688-ea02-4407-a6e3-bf945ede9eaa)
+
+
 
 - The Scenario: Two ships intersect at coordinates [34, -118].
 
@@ -91,6 +97,9 @@ This project’s complexity managing multiple asynchronous agents, race conditio
     - The Protocol: The agents exchange these tokens instantly. Ship B acknowledges and triggers a SLOW_STEAMING status.
 
 - The Visualization: The dashboard intercepts this machine-to-machine handshake and visualizes it as an "Encrypted Comms" chat window for the human user.
+
+![negotiationagent](https://github.com/user-attachments/assets/aefbf2e1-4cc7-4caf-be18-a861f545c3d1)
+
 
 3. Real-Time Alerts
 
